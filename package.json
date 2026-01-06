@@ -2,7 +2,7 @@
     "name": "ignition-json-edit",
     "displayName": "Ignition JSON Edit",
     "description": "Extract escaped Ignition script/code JSON strings to a temp file for editing, then write back with correct escaping.",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "publisher": "rbledsaw3",
     "repository": {
         "type": "git",

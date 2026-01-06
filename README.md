@@ -139,10 +139,42 @@ You can manually change the language mode in the temp editor if needed.
 * Assumes the JSON string literal exists on **one physical line**
   (typical for Ignition exports)
 * Does not attempt semantic validation of the script
-* Unicode escapes may normalize (e.g. `\u003d` → `=`) when written back
-  This is valid JSON and works correctly in Ignition
 
 ---
+
+## Escaping Behavior (Conservative by Design)
+
+When writing changes back into the source JSON, this extension uses a **strict,
+conservative escaping policy** to avoid making assumptions about Ignition’s
+internal JSON serializer.
+
+Specifically, on write-back the extension will:
+
+1. **Escape all non-ASCII characters**
+   Any character outside the printable ASCII range (`0x20–0x7E`) is encoded as
+   a Unicode escape sequence (`\uXXXX`, or surrogate pairs when required).
+   This ensures characters such as `»`, smart quotes, and other extended
+   Unicode symbols are always escaped.
+
+2. **Escape a conservative “web-safe” set**
+   The following characters are always written as Unicode escapes:
+   - `<` → `\u003c`
+   - `>` → `\u003e`
+   - `&` → `\u0026`
+   - `=` → `\u003d`
+
+3. **Preserve original Unicode escape choices**
+   If the original JSON string literal used specific Unicode escapes (for
+   example `\u003d` instead of `=`), those exact escape sequences are preserved
+   when writing back, even if the character appears elsewhere.
+
+This ensures that:
+- Newly introduced characters are escaped conservatively
+- Existing escape conventions from the Ignition export are respected
+- No assumptions are made about which characters Ignition expects to be escaped
+
+The goal is to put the content *back into the JSON exactly as safely as it came
+out*, with no normalization that could diverge from Ignition’s expectations.
 
 ## Packaging / Installation
 
@@ -166,6 +198,10 @@ code --install-extension ignition-json-edit-0.0.1.vsix
 
 MIT
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 ---
 
 ### After this

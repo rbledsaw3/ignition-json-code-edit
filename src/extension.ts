@@ -1,12 +1,12 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import * as path from "path";
 
 type LinkInfo = {
     sourceUri: vscode.Uri;
     sourceRange: vscode.Range;
     languageId: string;
+    unicodeEscapeMap: Map<string, string>;
 };
 
 const TempToLink = new Map<string, LinkInfo>();
@@ -64,6 +64,80 @@ function FormatErr(err: any): string {
     }
 }
 
+function BuildUnicodeEscapeMapFromLiteral(rawLiteral: string): Map<string, string> {
+    const map = new Map<string, string>();
+    const re = /\\u([0-9a-fA-F]{4})/g;
+
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(rawLiteral)) !== null) {
+        const hex = match[1].toLowerCase();
+        const code = parseInt(hex, 16);
+        const char = String.fromCharCode(code);
+
+        if (char === "\\" || char === "\"") continue;
+        map.set(char, `\\u${hex}`);
+    }
+    return map;
+}
+
+function EscapeCharToUnicode(ch: string): string {
+    const codePoint = ch.codePointAt(0)!;
+    if (codePoint <= 0xFFFF) {
+        return "\\u" + codePoint.toString(16).padStart(4, '0');
+    }
+
+    const n = codePoint - 0x10000;
+    const highSurrogate = 0xD800 + (n >> 10);
+    const lowSurrogate = 0xDC00 + (n & 0x3FF);
+
+    return (
+        "\\u" + highSurrogate.toString(16).padStart(4, '0') +
+        "\\u" + lowSurrogate.toString(16).padStart(4, '0')
+    );
+}
+
+function ApplyConservativeEscapePolicy(jsonStringLiteral: string): string {
+    if (
+        jsonStringLiteral.length < 2 ||
+            jsonStringLiteral[0] !== '"' ||
+            jsonStringLiteral[jsonStringLiteral.length - 1] !== '"'
+    ) {
+        return jsonStringLiteral;
+    }
+
+    let inner = jsonStringLiteral.slice(1, -1);
+
+    inner = inner.replace(/[^\u0020-\u007E]/gu, (m) => EscapeCharToUnicode(m));
+
+    inner = inner
+        .split("<").join("\\u003c")
+        .split(">").join("\\u003e")
+        .split("&").join("\\u0026")
+        .split("=").join("\\u003d");
+
+    return `"${inner}"`;
+}
+
+function ApplyUnicodeEscapePolicy(jsonStringLiteral: string, unicodeEscapeMap: Map<string, string>): string {
+    if (unicodeEscapeMap.size === 0) return jsonStringLiteral;
+
+    if (
+        jsonStringLiteral.length < 2 ||
+            jsonStringLiteral[0] !== '"' ||
+            jsonStringLiteral[jsonStringLiteral.length - 1] !== '"'
+    ) {
+        return jsonStringLiteral;
+    }
+
+    let inner = jsonStringLiteral.slice(1, -1);
+
+    for (const [ch, esc] of unicodeEscapeMap.entries()) {
+        inner = inner.split(ch).join(esc);
+    }
+
+    return `"${inner}"`;
+}
+
 async function ExtractToTemp(context: vscode.ExtensionContext) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
@@ -86,11 +160,14 @@ async function ExtractToTemp(context: vscode.ExtensionContext) {
     }
 
     const rawLiteral = doc.getText(range);
+
     const decoded = DecodeJsonStringLiteral(rawLiteral);
     if (decoded === null) {
         vscode.window.showErrorMessage("Selection/cursor is not a valid JSON string literal.");
         return;
     }
+
+    const unicodeEscapeMap = BuildUnicodeEscapeMapFromLiteral(rawLiteral);
 
     const languageId = GuessLanguageIdNearRange(doc, range);
 
@@ -115,6 +192,7 @@ async function ExtractToTemp(context: vscode.ExtensionContext) {
         sourceUri: doc.uri,
         sourceRange: range,
         languageId,
+        unicodeEscapeMap
     });
 
     const tempDoc = await vscode.workspace.openTextDocument(tempPath);
@@ -146,7 +224,9 @@ async function PushTempToSource(tempDoc: vscode.TextDocument, link: LinkInfo) {
 	    const sourceDoc = await vscode.workspace.openTextDocument(link.sourceUri);
 
 	    const updatedText = tempDoc.getText();
-	    const encodedLiteral = EncodeAsJsonStringLiteral(updatedText);
+	    let encodedLiteral = EncodeAsJsonStringLiteral(updatedText);
+        encodedLiteral = ApplyConservativeEscapePolicy(encodedLiteral);
+        encodedLiteral = ApplyUnicodeEscapePolicy(encodedLiteral, link.unicodeEscapeMap);
 
 	    const edit = new vscode.WorkspaceEdit();
 	    edit.replace(link.sourceUri, link.sourceRange, encodedLiteral);
