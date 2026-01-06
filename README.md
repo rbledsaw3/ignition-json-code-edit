@@ -1,9 +1,3 @@
-Below is a **complete, non-template `README.md`** you can drop in verbatim.
-It satisfies `vsce`’s checks and accurately documents what the extension actually does.
-
----
-
-````markdown
 # Ignition JSON Edit
 
 Ignition JSON Edit is a Visual Studio Code extension designed for working with
@@ -172,8 +166,6 @@ code --install-extension ignition-json-edit-0.0.1.vsix
 
 MIT
 
-````
-
 ---
 
 ### After this
@@ -183,4 +175,4 @@ Run again:
 ```bash
 npm run compile
 npm run package
-````
+```
