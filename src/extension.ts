@@ -138,6 +138,24 @@ function ApplyUnicodeEscapePolicy(jsonStringLiteral: string, unicodeEscapeMap: M
     return `"${inner}"`;
 }
 
+function FindIgnitionValueLiteralOnLine(doc: vscode.TextDocument, lineNo: number): vscode.Range | null {
+    const line = doc.lineAt(lineNo).text;
+    const re = /(^|\s)"(code|script|expression|style|query)"\s*:\s*"/;
+    const match = re.exec(line);
+    if (!match) return null;
+
+    const startIdx = (match.index + match[0].length) - 1;
+    const endIdx = FindUnescapedQuoteRight(line, startIdx + 1);
+    if (endIdx === -1) return null;
+
+    const start = new vscode.Position(lineNo, startIdx);
+    const end = new vscode.Position(lineNo, endIdx + 1);
+    const range = new vscode.Range(start, end);
+
+    const lit = doc.getText(range);
+    return DecodeJsonStringLiteral(lit) !== null ? range : null;
+}
+
 async function ExtractToTemp(context: vscode.ExtensionContext) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) return;
@@ -146,11 +164,9 @@ async function ExtractToTemp(context: vscode.ExtensionContext) {
 
     let range: vscode.Range | null = null;
 
-    if (!editor.selection.isEmpty) {
-        const sel = editor.selection;
-        range = ExpandToJsonStringLiteral(doc, sel.active) ?? sel;
-        range = EnsureRangeIsJsonStringLiteral(doc, range);
-    } else {
+    range = FindIgnitionValueLiteralOnLine(doc, editor.selection.active.line);
+
+    if (!range) {
         range = ExpandToJsonStringLiteral(doc, editor.selection.active);
     }
 
@@ -289,7 +305,7 @@ function FindUnescapedQuoteLeft(line: string, fromIndex: number): number {
 }
 
 function FindUnescapedQuoteRight(line: string, fromIndex: number): number {
-    for (let i = Math.min(0, fromIndex); i < line.length; i++) {
+    for (let i = Math.max(0, fromIndex); i < line.length; i++) {
         if (line[i] !== '"') continue;
         if (!IsEscaped(line, i)) return i;
     }
