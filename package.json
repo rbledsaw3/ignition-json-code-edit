@@ -4,6 +4,8 @@
     "description": "Extract escaped Ignition script/code JSON strings to a temp file for editing, then write back with correct escaping.",
     "version": "0.0.3",
     "publisher": "rbledsaw3",
+    "license": "MIT",
+    "icon": "icon.png",
     "repository": {
         "type": "git",
         "url": "https://github.com/rbledsaw3/ignition-json-edit.git"
@@ -19,6 +21,14 @@
         "onCommand:ignitionJsonEdit.replaceFromTemp"
     ],
     "main": "./out/extension.js",
+    "files": [
+        "out/**",
+        "icon.png",
+        "README.md",
+        "CHANGELOG.md",
+        "LICENSE.md",
+        "package.json"
+    ],
     "contributes": {
         "commands": [
             {

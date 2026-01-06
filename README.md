@@ -198,17 +198,3 @@ code --install-extension ignition-json-edit-0.0.1.vsix
 
 MIT
 
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
----
-
-### After this
-
-Run again:
-
-```bash
-npm run compile
-npm run package
-```
