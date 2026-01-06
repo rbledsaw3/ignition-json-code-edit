@@ -1,0 +1,28 @@
+# Node / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Compiled output
+out/
+dist/
+
+# VS Code packaging artifacts
+*.vsix
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+
+# VS Code workspace settings (optional, usually personal)
+.vscode/
+
+# Coverage / test artifacts (future-proofing)
+coverage/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+

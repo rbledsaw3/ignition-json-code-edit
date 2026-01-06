@@ -1,0 +1,59 @@
+{
+    "name": "ignition-json-edit",
+    "displayName": "Ignition JSON Edit",
+    "description": "Extract escaped Ignition script/code JSON strings to a temp file for editing, then write back with correct escaping.",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": ["Other"],
+    "activationEvents": [
+        "onCommand:ignitionJsonEdit.extractToTemp",
+        "onCommand:ignitionJsonEdit.replaceFromTemp"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "ignitionJsonEdit.extractToTemp",
+                "title": "Ignition: Extract JSON String to Temp Editor"
+            },
+            {
+                "command": "ignitionJsonEdit.replaceFromTemp",
+                "title": "Ignition: Replace Source JSON String From Temp"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "ignitionJsonEdit.extractToTemp",
+                "key": "ctrl+alt+e",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "ignitionJsonEdit.replaceFromTemp",
+                "key": "ctrl+alt+r",
+                "when": "editorTextFocus"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src",
+        "test": "vscode-test",
+        "package": "npx @vscode/vsce package"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.85.0",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "20.x",
+        "typescript-eslint": "^8.48.1",
+        "eslint": "^9.39.1",
+        "typescript": "^5.3.3",
+        "@vscode/vsce": "^3.0.0",
+        "@vscode/test-cli": "^0.0.12",
+        "@vscode/test-electron": "^2.5.2"
+    }
+}
